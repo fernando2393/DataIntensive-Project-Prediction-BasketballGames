@@ -1,2 +1,3 @@
-# DataIntensive-Project-Prediction-BasketballGames
-Prediction of basketball games outcome
+# Data Intensive - Prediction Basketball Games
+
+Prediction of NBA basketball games outcome.
