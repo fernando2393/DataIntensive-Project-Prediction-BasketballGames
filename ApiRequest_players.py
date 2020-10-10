@@ -38,5 +38,9 @@ for i in range(json_file['meta']['total_pages']):
         assert aux.status_code == 200, "Status code is " + str(aux.status_code)
         data_list.append(aux.json())
 
+    if i % 100:
+        with open('stats_data.json', 'w') as f:
+            json.dump(data_list, f)
+
 with open('stats_data.json', 'w') as f:
     json.dump(data_list, f)
