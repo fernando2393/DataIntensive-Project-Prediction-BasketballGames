@@ -9,21 +9,21 @@ parameters = {
     "page": 0,
 }
 session = requests.Session()
-data = session.get("https://www.balldontlie.io/api/v1/games", params=parameters)
+data = session.get("https://www.balldontlie.io/api/v1/players", params=parameters)
 print(data.status_code)
 
 json_file = data.json()
 print(json_file['meta'])
 
 data_list = []
-for i in range(1, 487):
-    if i % (MAX_CALLS + 1) != 0:
+for i in range(0, json_file['meta']['total_pages']):
+    if i % (MAX_CALLS) != 0 and i !=0:
         print("Call: " + str(i))
         parameters = {
             "per_page": 100,
             "page": i,
         }
-        aux = session.get("https://www.balldontlie.io/api/v1/games", params=parameters)
+        aux = session.get("https://www.balldontlie.io/api/v1/players", params=parameters)
         assert aux.status_code == 200, "Status code is " + str(aux.status_code)
         data_list.append(aux.json())
     else:
