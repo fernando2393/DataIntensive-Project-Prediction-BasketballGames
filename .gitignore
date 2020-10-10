@@ -145,3 +145,10 @@ fabric.properties
 
 # End of https://www.toptal.com/developers/gitignore/api/vscode,pycharm,macos
 
+.idea/.gitignore
+.idea/DataIntensive-Project-Prediction-BasketballGames.iml
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea
