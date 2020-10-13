@@ -16,26 +16,21 @@ json_file = data.json()
 print(json_file['meta'])
 
 with open('stats_data.json') as f:
-  data_list = json.load(f)
+    data_list = json.load(f)
 
 for i in range(704, json_file['meta']['total_pages']):
-    if i == 0 or (i+1) % MAX_CALLS != 0:
-        print("Call: " + str(i))
-        parameters = {
-            "per_page": 100,
-            "page": i,
-        }
+    parameters = {
+        "per_page": 100,
+        "page": i,
+    }
+    if i == 0 or (i + 1) % MAX_CALLS != 0:
+        print("Request: " + str(i))
         aux = session.get("https://www.balldontlie.io/api/v1/stats", params=parameters)
         assert aux.status_code == 200, "Status code is " + str(aux.status_code)
         data_list.append(aux.json())
     else:
-        print("Waiting...")
         time.sleep(60)  # Wait for one minute and do other 60 API requests
-        print("Call: " + str(i))
-        parameters = {
-            "per_page": 100,
-            "page": i,
-        }
+        print("Request: " + str(i))
         aux = session.get("https://www.balldontlie.io/api/v1/stats", params=parameters)
         assert aux.status_code == 200, "Status code is " + str(aux.status_code)
         data_list.append(aux.json())
