@@ -155,4 +155,4 @@ fabric.properties
 .idea/vcs.xml
 .idea
 
-test/*
+test
