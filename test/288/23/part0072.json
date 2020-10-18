@@ -1,7 +1,1 @@
-[
-  {"team_id": 23, "player_id": 24},
-  {"team_id": 23, "player_id": 22},
-  {"team_id": 23, "player_id": 20},23,
-  {"team_id": 23, "player_id": 28},
-  {"team_id": 23, "player_id": 32}
-]
+{"team_id": 23, "player_id": 3}
