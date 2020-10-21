@@ -1,12 +1,17 @@
 import glob
 import pandas as pd
 import numpy as np
-from Features import Features as ft
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier
+from tqdm import tqdm
+from Features import Stats as st
+from Features import Games as gm
 
 SEASON_AVG = "season_averages/"
+SEASON_GAMES = "season_games/"
 
 
-def dataLoader(local, visitor, season, features, averaged=True):
+def teamLoader(local, visitor, season, features, averaged=True):
     local_team = np.zeros((12, 22))
     visitor_team = np.ones((12, 22))
     id_1 = local
@@ -35,14 +40,81 @@ def dataLoader(local, visitor, season, features, averaged=True):
     return local_team, visitor_team
 
 
-def main():
-    # local_team, visitor_team = dataLoader(22, 14, 2010, [ft.ast.value], True)
+def gameLoader(season):
+    file = glob.glob(SEASON_GAMES + str(season) + '/*.json', recursive=False)  # Season games
+    json_file = pd.read_json(file[0])
+    games = np.zeros((json_file.shape[0], len(json_file.iloc[0][0]) - 1))  # Remove the date
+    for idx, row in json_file.iterrows():
+        games[idx] = np.array(list(row['data'].values())[1:])
 
-    for season in range(2002, 2015):
-        json_file = pd.read_json("data/game_data.json")
-        json_file = json_file['data']
-        json_file = json_file[json_file['season'] == season]
-        pass
+    return games
+
+
+def dataLoader(season_start, season_end, features):
+    x = list()
+    y = list()
+    for season in range(season_start, season_end + 1):
+        games = gameLoader(season)
+        for game in tqdm(games):
+            local_team, visitor_team = teamLoader(int(game[gm.home_team_id.value]),
+                                                  int(game[gm.visitor_team_id.value]),
+                                                  season,
+                                                  features,
+                                                  True)
+            x.append(np.vstack((local_team, visitor_team)))
+            y.append(np.argmax([game[gm.home_team_score.value], game[gm.visitor_team_score.value]]))
+
+    return x, y
+
+
+def main():
+    # Training data
+    features = [st.ast.value,
+                st.blk.value,
+                st.dreb.value,
+                st.fg3_pct.value,
+                st.fg3a.value,
+                st.fg3m.value,
+                st.fg_pct.value,
+                st.fga.value,
+                st.fgm.value,
+                st.ft_pct.value,
+                st.fta.value,
+                st.ftm.value,
+                st.games_played.value,
+                st.seconds.value,
+                st.oreb.value,
+                st.pf.value,
+                st.player_id.value,
+                st.pts.value,
+                st.reb.value,
+                st.season.value,
+                st.stl.value,
+                st.turnover.value]
+    print("Loading training data...")
+    x_train, y_train = dataLoader(2002, 2015, features)
+    training_samples = len(x_train)
+    # Testing data
+    print("Loading testing data...")
+    x_test, y_test = dataLoader(2015, 2015, features)
+    testing_samples = len(x_test)
+    # Scale training data
+    x_to_scale = np.vstack(x_train)
+    scaler = StandardScaler()
+    x_train = scaler.fit_transform(x_to_scale[:, :len(features)])
+    x_train = np.hstack((x_train, x_to_scale[:, -1].reshape((-1, 1))))
+    x_train = [x_train[i * 24:24 * (i + 1), :] for i in range(training_samples)]
+    x_train = [x_train[i].flatten() for i in range(len(x_train))]
+    # Scale testing data
+    x_to_scale = np.vstack(x_test)
+    x_test = scaler.transform(x_to_scale[:, :len(features)])
+    x_test = np.hstack((x_test, x_to_scale[:, -1].reshape((-1, 1))))
+    x_test = [x_test[i * 24:24 * (i + 1), :] for i in range(testing_samples)]
+    x_test = [x_test[i].flatten() for i in range(len(x_test))]
+
+    clf = MLPClassifier(hidden_layer_sizes=(10, 10, 5), early_stopping=True).fit(x_train, y_train)
+    print(clf.score(x_test, y_test))
+
 
 if __name__ == "__main__":
     main()

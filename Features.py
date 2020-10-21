@@ -1,6 +1,7 @@
 import enum
 
-class Features(enum.Enum):
+
+class Stats(enum.Enum):
     ast = 0
     blk = 1
     dreb = 2
@@ -23,3 +24,12 @@ class Features(enum.Enum):
     season = 19
     stl = 20
     turnover = 21
+
+
+class Games(enum.Enum):
+    home_team_id = 0
+    home_team_score = 1
+    season = 2
+    postseason = 3
+    visitor_team_id = 4
+    visitor_team_score = 5
