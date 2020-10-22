@@ -13,7 +13,6 @@ from Features import Games as gm
 SEASON_AVG = "season_averages/"
 SEASON_GAMES = "season_games/"
 
-
 def teamLoader(local, visitor, season, features, averaged=True):
     local_team = np.zeros((12, 22))
     visitor_team = np.ones((12, 22))
@@ -123,12 +122,14 @@ def main():
     scaler = StandardScaler()
     x_train = scaler.fit_transform(x_to_scale[:, :len(features)])
     x_train = np.hstack((x_train, x_to_scale[:, -1].reshape((-1, 1))))
+    x_train = np.hstack((x_train, np.ones((x_train.shape[0], 1))))
     x_train = [x_train[i * 24:24 * (i + 1), :] for i in range(training_samples)]
     x_train = [x_train[i].flatten() for i in range(len(x_train))]
     # Scale testing data
     x_to_scale = np.vstack(x_test)
     x_test = scaler.transform(x_to_scale[:, :len(features)])
     x_test = np.hstack((x_test, x_to_scale[:, -1].reshape((-1, 1))))
+    x_test = np.hstack((x_test, np.ones((x_test.shape[0], 1))))
     x_test = [x_test[i * 24:24 * (i + 1), :] for i in range(testing_samples)]
     x_test = [x_test[i].flatten() for i in range(len(x_test))]
 
