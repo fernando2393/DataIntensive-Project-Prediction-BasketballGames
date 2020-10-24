@@ -6,7 +6,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import auc
 from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPClassifier
-from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from tqdm import tqdm
 from Features import Stats as st
@@ -32,6 +31,7 @@ def balancedDatasets(x, y):
     total_indices = np.sort(np.hstack((x_home_indices, x_away)))
 
     return [x[i] for i in total_indices], [y[i] for i in total_indices]
+
 
 def teamLoader(local, visitor, season, features, averaged=True):
     local_team = np.zeros((12, 23))
@@ -164,120 +164,110 @@ def main():
     x_test = [x_test[i * 24:24 * (i + 1), :] for i in range(testing_samples)]
     x_test = np.vstack([x_test[i].flatten() for i in range(len(x_test))])
 
-    # clf = MLPClassifier(hidden_layer_sizes=(100, 100, 100), early_stopping=True, max_iter=250,
-    #                     solver="adam",
-    #                     activation="logistic"
-    #                     ).fit(x_train, y_train)
-    # print("MLP: Accuracy on testing: " + str(clf.score(x_test, y_test)))
-
-
     print("Starting K folds...")
-    X_kfolds = np.vstack((x_train, x_test))
-    Y_kfolds = np.hstack((y_train, y_test))
+    x_kfolds = np.vstack((x_train, x_test))
+    y_kfolds = np.hstack((y_train, y_test))
     kf = KFold(n_splits=10, shuffle=False)
-    result_MLP_kf = []
-    result_NB_kf = []
-    result_RF_kf = []
-    result_LR_kf = []
-    y_pred_label_MLP = []
-    y_pred_label_NB = []
-    y_pred_label_RF = []
-    y_pred_label_LR = []
+    result_mlp_kf = []
+    result_nb_kf = []
+    result_rf_kf = []
+    result_lr_kf = []
+    y_pred_label_mlp = []
+    y_pred_label_nb = []
+    y_pred_label_rf = []
+    y_pred_label_lr = []
     y_real_list = []
     counter = 0
 
-    for train_index, test_index in kf.split(X_kfolds):
-        X_ktrain, X_ktest = X_kfolds[train_index], X_kfolds[test_index]
-        Y_ktrain, Y_ktest = Y_kfolds[train_index], Y_kfolds[test_index]
+    for train_index, test_index in kf.split(x_kfolds):
+        x_ktrain, x_ktest = x_kfolds[train_index], x_kfolds[test_index]
+        y_ktrain, y_ktest = y_kfolds[train_index], y_kfolds[test_index]
 
         # MLP
         print("MLP...")
-        clf_MLP = MLPClassifier(hidden_layer_sizes=(100, 100, 100), early_stopping=True, max_iter=100000,
-                            solver="adam",
-                            activation="relu"
-                            ).fit(X_ktrain, Y_ktrain)
-        y_pred_MLP = clf_MLP.predict_proba(X_ktest)
-        y_pred_label_MLP.append(np.mean(clf_MLP.predict(X_ktest)))
-        result_MLP_kf.append(clf_MLP.score(X_ktest, Y_ktest))
-        fpr, tpr, _ = metrics.roc_curve(Y_ktest, [y_pred_MLP[i, Y_ktest[i]] for i in range(y_pred_MLP.shape[0])])
+        clf_mlp = MLPClassifier(hidden_layer_sizes=(100, 100, 100), early_stopping=True, max_iter=100000,
+                                solver="adam",
+                                activation="relu"
+                                ).fit(x_ktrain, y_ktrain)
+        y_pred_mlp = clf_mlp.predict_proba(x_ktest)
+        y_pred_label_mlp.append(np.mean(clf_mlp.predict(x_ktest)))
+        result_mlp_kf.append(clf_mlp.score(x_ktest, y_ktest))
+        fpr, tpr, _ = metrics.roc_curve(y_ktest, [y_pred_mlp[i, y_ktest[i]] for i in range(y_pred_mlp.shape[0])])
         roc_auc = auc(fpr, tpr)
         plt.figure(1)
         plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
 
-
         # NB
         print("Naive Bayes...")
-        clf_gnb = GaussianNB().fit(X_ktrain, Y_ktrain)
-        result_NB_kf.append(clf_gnb.score(X_ktest, Y_ktest))
-        y_pred_label_NB.append(np.mean(clf_gnb.predict(X_ktest)))
-        y_pred_NB = clf_gnb.predict_proba(X_ktest)
-        result_NB_kf.append(clf_gnb.score(X_ktest, Y_ktest))
-        fpr, tpr, _ = metrics.roc_curve(Y_ktest, [y_pred_NB[i, Y_ktest[i]] for i in range(y_pred_NB.shape[0])])
+        clf_gnb = GaussianNB()
+        clf_gnb.fit(x_ktrain, y_ktrain)
+        result_nb_kf.append(clf_gnb.score(x_ktest, y_ktest))
+        y_pred_label_nb.append(np.mean(clf_gnb.predict(x_ktest)))
+        y_pred_nb = clf_gnb.predict_proba(x_ktest)
+        result_nb_kf.append(clf_gnb.score(x_ktest, y_ktest))
+        fpr, tpr, _ = metrics.roc_curve(y_ktest, [y_pred_nb[i, y_ktest[i]] for i in range(y_pred_nb.shape[0])])
         roc_auc = auc(fpr, tpr)
         plt.figure(2)
         plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
 
         # Random Forest
         print("Random Forest...")
-        clf_rf = RandomForestClassifier().fit(X_ktrain, Y_ktrain)
-        result_RF_kf.append(clf_rf.score(X_ktest, Y_ktest))
-        y_pred_label_RF.append(np.mean(np.array(clf_rf.predict(X_ktest))))
-        y_pred_RF = clf_rf.predict_proba(X_ktest)
-        result_RF_kf.append(clf_rf.score(X_ktest, Y_ktest))
-        fpr, tpr, _ = metrics.roc_curve(Y_ktest, [y_pred_RF[i, Y_ktest[i]] for i in range(y_pred_RF.shape[0])])
+        clf_rf = RandomForestClassifier()
+        clf_rf.fit(x_ktrain, y_ktrain)
+        result_rf_kf.append(clf_rf.score(x_ktest, y_ktest))
+        y_pred_label_rf.append(np.mean(np.array(clf_rf.predict(x_ktest))))
+        y_pred_rf = clf_rf.predict_proba(x_ktest)
+        result_rf_kf.append(clf_rf.score(x_ktest, y_ktest))
+        fpr, tpr, _ = metrics.roc_curve(y_ktest, [y_pred_rf[i, y_ktest[i]] for i in range(y_pred_rf.shape[0])])
         roc_auc = auc(fpr, tpr)
         plt.figure(3)
         plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
 
         # Logistic Regression
         print("Logistic Regression...")
-        clf_LR = LogisticRegression(max_iter=100000).fit(X_ktrain, Y_ktrain)
-        result_LR_kf.append(clf_LR.score(X_ktest, Y_ktest))
-        y_pred_LR = clf_LR.predict_proba(X_ktest)
-        y_pred_label_LR.append(np.mean(np.array(clf_LR.predict(X_ktest))))
-        result_LR_kf.append(clf_LR.score(X_ktest, Y_ktest))
-        fpr, tpr, _ = metrics.roc_curve(Y_ktest, [y_pred_LR[i, Y_ktest[i]] for i in range(y_pred_LR.shape[0])])
+        clf_lr = LogisticRegression(max_iter=100000)
+        clf_lr.fit(x_ktrain, y_ktrain)
+        result_lr_kf.append(clf_lr.score(x_ktest, y_ktest))
+        y_pred_lr = clf_lr.predict_proba(x_ktest)
+        y_pred_label_lr.append(np.mean(np.array(clf_lr.predict(x_ktest))))
+        result_lr_kf.append(clf_lr.score(x_ktest, y_ktest))
+        fpr, tpr, _ = metrics.roc_curve(y_ktest, [y_pred_lr[i, y_ktest[i]] for i in range(y_pred_lr.shape[0])])
         roc_auc = auc(fpr, tpr)
         plt.figure(4)
         plt.plot(fpr, tpr, label='ROC curve (area = %0.2f)' % roc_auc)
 
-        y_real_list.append(np.mean(Y_ktest))
+        y_real_list.append(np.mean(y_ktest))
         counter += 1
         print("Fold " + str(counter) + " performed.")
 
-
-
-
     # MLP results
-    kf_MLP_acc_mean = np.mean(result_MLP_kf)
-    kf_MLP_acc_std = np.std(result_MLP_kf)
-    print("MLP: Mean Accuracy on testing: " + str(kf_MLP_acc_mean) + " +- " + str(kf_MLP_acc_std))
-    print("MLP: Mean prediction: " + str(np.mean(y_pred_label_MLP)) + "+-" + str(np.std(y_pred_label_MLP)))
-
+    kf_mlp_acc_mean = np.mean(result_mlp_kf)
+    kf_mlp_acc_std = np.std(result_mlp_kf)
+    print("MLP: Mean Accuracy on testing: " + str(kf_mlp_acc_mean) + " +- " + str(kf_mlp_acc_std))
+    print("MLP: Mean prediction: " + str(np.mean(y_pred_label_mlp)) + "+-" + str(np.std(y_pred_label_mlp)))
 
     # NB results
-    kf_NB_acc_mean = np.mean(result_NB_kf)
-    kf_NB_acc_std = np.std(result_NB_kf)
-    print("Naive Bayes: Mean Accuracy on testing: " + str(kf_NB_acc_mean) + " +- " + str(kf_NB_acc_std))
-    print("Naive Bayes: Mean prediction: " + str(np.mean(y_pred_label_NB)) + "+-" + str(np.std(y_pred_label_NB)))
+    kf_nb_acc_mean = np.mean(result_nb_kf)
+    kf_nb_acc_std = np.std(result_nb_kf)
+    print("Naive Bayes: Mean Accuracy on testing: " + str(kf_nb_acc_mean) + " +- " + str(kf_nb_acc_std))
+    print("Naive Bayes: Mean prediction: " + str(np.mean(y_pred_label_nb)) + "+-" + str(np.std(y_pred_label_nb)))
 
     # RF Results
-    kf_RF_acc_mean = np.mean(result_RF_kf)
-    kf_RF_acc_std = np.std(result_RF_kf)
-    print("Random Forest: Mean Accuracy on testing: " + str(kf_RF_acc_mean) + " +- " + str(kf_RF_acc_std))
-    print("Random Forest: Mean prediction: " + str(np.mean(y_pred_label_RF)) + "+-" + str(np.std(y_pred_label_RF)))
+    kf_rf_acc_mean = np.mean(result_rf_kf)
+    kf_rf_acc_std = np.std(result_rf_kf)
+    print("Random Forest: Mean Accuracy on testing: " + str(kf_rf_acc_mean) + " +- " + str(kf_rf_acc_std))
+    print("Random Forest: Mean prediction: " + str(np.mean(y_pred_label_rf)) + "+-" + str(np.std(y_pred_label_rf)))
 
     # Logistic Regression
-    kf_LR_acc_mean = np.mean(result_LR_kf)
-    kf_LR_acc_std = np.std(result_LR_kf)
-    print("Logistic Regression: Mean Accuracy on testing: " + str(kf_LR_acc_mean) + " +- " + str(kf_LR_acc_std))
-    print("Logistic Regression: Mean prediction: " + str(np.mean(y_pred_label_LR)) + "+-" + str(np.std(y_pred_label_LR)))
+    kf_lr_acc_mean = np.mean(result_lr_kf)
+    kf_lr_acc_std = np.std(result_lr_kf)
+    print("Logistic Regression: Mean Accuracy on testing: " + str(kf_lr_acc_mean) + " +- " + str(kf_lr_acc_std))
+    print("Logistic Regression: Mean prediction: " + str(np.mean(y_pred_label_lr)) + "+-" +
+          str(np.std(y_pred_label_lr)))
 
     print("Total percentage: " + str(np.mean(y_real_list)) + "+-" + str(np.std(y_real_list)))
 
-
-    #Compute ROC - AUC
-
+    # Compute ROC - AUC
     plt.figure(1)
     plt.plot([0, 1], [0, 1], 'k--')
     plt.xlim([0.0, 1.0])
@@ -315,7 +305,6 @@ def main():
     plt.legend(loc="lower right")
 
     plt.show()
-
 
 
 if __name__ == "__main__":
