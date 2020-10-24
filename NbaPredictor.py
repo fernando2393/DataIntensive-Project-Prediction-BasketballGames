@@ -19,6 +19,19 @@ from sklearn import metrics
 
 SEASON_AVG = "season_averages/"
 SEASON_GAMES = "season_games/"
+BALANCED_DATASETS = True
+
+
+def balancedDatasets(x, y):
+    # There are more local wins (0), so look for visitor (1)
+    x_home = np.argwhere(np.array(y) == 0)  # Get local win elements
+    x_home = np.hstack(x_home)
+    x_away = np.argwhere(np.array(y) == 1)  # Get away win elements
+    x_away = np.hstack(x_away)
+    x_home_indices = np.random.choice(x_home, size=len(x_away), replace=False)
+    total_indices = np.sort(np.hstack((x_home_indices, x_away)))
+
+    return [x[i] for i in total_indices], [y[i] for i in total_indices]
 
 def teamLoader(local, visitor, season, features, averaged=True):
     local_team = np.zeros((12, 23))
@@ -89,28 +102,28 @@ def dataLoader(season_start, season_end, features):
 def main():
     # Training data
     features = [
-                st.ast.value,
-                st.blk.value,
-                st.dreb.value,
-                # st.fg3_pct.value,
-                st.fg3a.value,
-                st.fg3m.value,
-                # st.fg_pct.value,
-                st.fga.value,
-                st.fgm.value,
-                # st.ft_pct.value,
-                st.fta.value,
-                st.ftm.value,
-                st.games_played.value,
-                # st.seconds.value,
-                st.oreb.value,
-                st.pf.value,
-                # st.player_id.value,
-                st.pts.value,
-                st.reb.value,
-                # st.season.value,
-                st.stl.value,
-                st.turnover.value
+        st.ast.value,
+        st.blk.value,
+        st.dreb.value,
+        # st.fg3_pct.value,
+        st.fg3a.value,
+        st.fg3m.value,
+        # st.fg_pct.value,
+        st.fga.value,
+        st.fgm.value,
+        # st.ft_pct.value,
+        st.fta.value,
+        st.ftm.value,
+        st.games_played.value,
+        # st.seconds.value,
+        st.oreb.value,
+        st.pf.value,
+        # st.player_id.value,
+        st.pts.value,
+        # st.reb.value,
+        # st.season.value,
+        st.stl.value,
+        st.turnover.value
     ]
     print("Loading training data...")
     if os.path.exists("train.npz"):
@@ -118,7 +131,9 @@ def main():
         x_train = npz_file['x']
         y_train = npz_file['y']
     else:
-        x_train, y_train = dataLoader(1990, 2016, features)  # Both initial and end are included
+        x_train, y_train = dataLoader(2002, 2002, features)  # Both initial and end are included
+        if BALANCED_DATASETS:
+            x_train, y_train = balancedDatasets(x_train, y_train)
         np.savez("train.npz", x=x_train, y=y_train)
     training_samples = len(x_train)
     # Testing data
@@ -128,7 +143,9 @@ def main():
         x_test = npz_file['x']
         y_test = npz_file['y']
     else:
-        x_test, y_test = dataLoader(2017, 2018, features)  # Both initial and end are included
+        x_test, y_test = dataLoader(2015, 2015, features)  # Both initial and end are included
+        if BALANCED_DATASETS:
+            x_test, y_test = balancedDatasets(x_test, y_test)
         np.savez("test.npz", x=x_test, y=y_test)
     testing_samples = len(x_test)
     # Scale training data
