@@ -131,7 +131,7 @@ def main():
         x_train = npz_file['x']
         y_train = npz_file['y']
     else:
-        x_train, y_train = dataLoader(2002, 2002, features)  # Both initial and end are included
+        x_train, y_train = dataLoader(1990, 2015, features)  # Both initial and end are included
         if BALANCED_DATASETS:
             x_train, y_train = balancedDatasets(x_train, y_train)
         np.savez("train.npz", x=x_train, y=y_train)
@@ -143,7 +143,7 @@ def main():
         x_test = npz_file['x']
         y_test = npz_file['y']
     else:
-        x_test, y_test = dataLoader(2015, 2015, features)  # Both initial and end are included
+        x_test, y_test = dataLoader(2016, 2018, features)  # Both initial and end are included
         if BALANCED_DATASETS:
             x_test, y_test = balancedDatasets(x_test, y_test)
         np.savez("test.npz", x=x_test, y=y_test)
