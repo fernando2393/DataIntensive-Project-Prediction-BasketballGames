@@ -34,8 +34,8 @@ def balancedDatasets(x, y):
 
 
 def teamLoader(local, visitor, season, features, averaged=True):
-    local_team = np.zeros((12, 23))
-    visitor_team = np.ones((12, 23))
+    local_team = np.zeros((12, 22))
+    visitor_team = np.ones((12, 22))
     local_id_norm = float("{:.2f}".format(local / 30))
     visitor_id_norm = float("{:.2f}".format(visitor / 30))
     id_1 = str(local)
@@ -49,7 +49,7 @@ def teamLoader(local, visitor, season, features, averaged=True):
         for idx, row in json_file.iterrows():
             if np.array(list(row['data'].values())).shape[0] != 22:
                 return None, None
-            local_team[idx] = np.hstack((np.array(list(row['data'].values())), local_id_norm))
+            local_team[idx] = np.array(list(row['data'].values()))
 
     files = glob.glob(SEASON_AVG + str(season) + "/" + id_2 + '/*.json', recursive=False)  # Visitor team
     for file in files:
@@ -57,11 +57,13 @@ def teamLoader(local, visitor, season, features, averaged=True):
         for idx, row in json_file.iterrows():
             if np.array(list(row['data'].values())).shape[0] != 22:
                 return None, None
-            visitor_team[idx] = np.hstack((np.array(list(row['data'].values())), visitor_id_norm))
+            visitor_team[idx] = np.array(list(row['data'].values()))
 
     if len(features) > 0:
         local_team = local_team[:, features]
+        local_team = np.hstack((local_team, local_id_norm * np.ones((local_team.shape[0], 1))))
         visitor_team = visitor_team[:, features]
+        visitor_team = np.hstack((visitor_team, visitor_id_norm * np.ones((visitor_team.shape[0], 1))))
     # local_team = np.append(local_team, np.zeros((12, 1)), axis=1)
     # visitor_team = np.append(visitor_team, np.ones((12, 1)), axis=1)
 
@@ -130,6 +132,8 @@ def main():
         npz_file = np.load("train.npz")
         x_train = npz_file['x']
         y_train = npz_file['y']
+        if BALANCED_DATASETS:
+            x_train, y_train = balancedDatasets(x_train, y_train)
     else:
         x_train, y_train = dataLoader(1990, 2015, features)  # Both initial and end are included
         if BALANCED_DATASETS:
@@ -142,6 +146,8 @@ def main():
         npz_file = np.load("test.npz")
         x_test = npz_file['x']
         y_test = npz_file['y']
+        if BALANCED_DATASETS:
+            x_test, y_test = balancedDatasets(x_test, y_test)
     else:
         x_test, y_test = dataLoader(2016, 2018, features)  # Both initial and end are included
         if BALANCED_DATASETS:
@@ -153,16 +159,16 @@ def main():
     scaler = StandardScaler()
     x_train = scaler.fit_transform(x_to_scale[:, :len(features)])
     x_train = np.hstack((x_train, x_to_scale[:, -1].reshape((-1, 1))))
-    x_train = np.hstack((x_train, np.ones((x_train.shape[0], 1))))
     x_train = [x_train[i * 24:24 * (i + 1), :] for i in range(training_samples)]
     x_train = np.vstack([x_train[i].flatten() for i in range(len(x_train))])
+    x_train = np.hstack((x_train, np.ones((x_train.shape[0], 1))))
     # Scale testing data
     x_to_scale = np.vstack(x_test)
     x_test = scaler.transform(x_to_scale[:, :len(features)])
     x_test = np.hstack((x_test, x_to_scale[:, -1].reshape((-1, 1))))
-    x_test = np.hstack((x_test, np.ones((x_test.shape[0], 1))))
     x_test = [x_test[i * 24:24 * (i + 1), :] for i in range(testing_samples)]
     x_test = np.vstack([x_test[i].flatten() for i in range(len(x_test))])
+    x_test = np.hstack((x_test, np.ones((x_test.shape[0], 1))))
 
     print("Starting K folds...")
     x_kfolds = np.vstack((x_train, x_test))
