@@ -8,7 +8,7 @@ The aim of this project can be split into the following points:
 * Test different ML-based approaches in order to predict the final results
 of NBA matches along a season.
 
-The first bulletpoint has been performed by means of Scala and Spark, using
+The first bulletpoint has been performed using Scala and Spark, using
 the API [Ball Don't Lie](https://www.balldontlie.io). By means of the obtained historical data we have built our own dataset of rosters in base to
 the seasonal averages of the team players in each recorded metric.
 
